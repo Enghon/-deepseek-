@@ -1,0 +1,12 @@
+1、软件安装
+	ollama：模型环境
+	python：提供网页api
+2.环境配置
+	pip install -r requirements  #安装python环境依赖，需要提前进入源码文件夹
+	ollama run deepseek-r1:1.5b   #下载模型包
+3、运行
+	双击mail.py
+4、使用
+	浏览器地址栏输入127.0.0.1:8083
+
+注意ollama或python安装过程中可能不会添加环境变量，请自行配置。或者更新系统再安装！！！
