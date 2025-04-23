@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI助手</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --accent-color: #fbbc05;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #495057;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --radius-lg: 12px;
+            --radius-md: 8px;
+            --radius-sm: 4px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+            background-color: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-weight: 500;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-weight: 300;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--light-gray);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .user-message {
+            background-color: var(--primary-color);
+            color: var(--white);
+            align-self: flex-end;
+            border-bottom-right-radius: var(--radius-sm);
+        }
+
+        .bot-message {
+            background-color: var(--white);
+            color: var(--dark-gray);
+            align-self: flex-start;
+            border-bottom-left-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .bot-message-streaming {
+            background-color: var(--white);
+            color: var(--dark-gray);
+            align-self: flex-start;
+            border-bottom-left-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            min-height: 40px;
+        }
+
+        .input-area {
+            padding: 15px 20px;
+            background-color: var(--white);
+            border-top: 1px solid var(--medium-gray);
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 24px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            outline: none;
+            padding-right: 40px;
+        }
+
+        #user-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+
+        #send-button {
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #send-button:hover {
+            background-color: #3367d6;
+            transform: translateY(-1px);
+        }
+
+        #send-button:active {
+            transform: translateY(0);
+        }
+
+        #send-button:disabled {
+            background-color: var(--medium-gray);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 10px 16px;
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            align-self: flex-start;
+            box-shadow: var(--shadow-sm);
+            color: var(--dark-gray);
+            font-style: italic;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            align-items: center;
+            height: 1rem;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            margin: 0 2px;
+            background-color: var(--dark-gray);
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.4;
+        }
+
+        .typing-dots span:nth-child(1) {
+            animation: typingAnimation 1.5s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation: typingAnimation 1.5s infinite 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation: typingAnimation 1.5s infinite 0.4s;
+        }
+
+        .timestamp {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .stop-button {
+            position: absolute;
+            right: 140px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .stop-button:hover {
+            background-color: #cc0000;
+        }
+
+        .stop-button svg {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+
+        .qrcode-container {
+            position: absolute;
+            right: -160px;
+            top: 20px;
+            width: 150px;
+            background-color: white;
+            padding: 15px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .qrcode-container img {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 10px;
+        }
+
+        .qrcode-container p {
+            font-size: 0.8rem;
+            color: var(--dark-gray);
+            margin-top: 5px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes typingAnimation {
+            0% { opacity: 0.4; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-3px); }
+            100% { opacity: 0.4; transform: translateY(0); }
+        }
+
+        @media (max-width: 1100px) {
+            .qrcode-container {
+                position: static;
+                margin: 20px auto;
+                right: auto;
+                top: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            #send-button {
+                padding: 12px 18px;
+            }
+
+            .stop-button {
+                right: 120px;
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI助手</h1>
+            <p>智能问答 · 知识服务 · 24小时在线</p>
+        </div>
+
+        <div class="chat-container" id="chat-container">
+            <div class="message bot-message">
+                您好！我是AI助手，很高兴为您服务。请问有什么可以帮您的吗？
+                <div class="timestamp">今天</div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typing-indicator">
+            <span>AI正在输入</span>
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="输入您的问题..." autofocus>
+            <button class="stop-button" id="stop-button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M6 6h12v12H6z"/>
+                </svg>
+                结束思考
+            </button>
+            <button id="send-button" onclick="sendMessage()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 5px;">
+                    <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.5.5 0 0 1-.938.008L6.57 10.03l-4.052.815a.5.5 0 0 1-.515-.641L4.784 1.05 15.853.146zM6.636 9.426l4.152-4.152L5.697 8.387l.939.252z"/>
+                </svg>
+                发送
+            </button>
+        </div>
+    </div>
+
+
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const stopButton = document.getElementById('stop-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        let isStreaming = false;
+        let controller = null;
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addMessage(content, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
+
+            const contentDiv = document.createElement('div');
+            contentDiv.textContent = content;
+            messageDiv.appendChild(contentDiv);
+
+            const timestampDiv = document.createElement('div');
+            timestampDiv.classList.add('timestamp');
+            timestampDiv.textContent = getCurrentTime();
+            messageDiv.appendChild(timestampDiv);
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return messageDiv;
+        }
+
+        function stopThinking() {
+            if (controller) {
+                controller.abort();
+                controller = null;
+            }
+
+            isStreaming = false;
+            typingIndicator.style.display = 'none';
+            stopButton.style.display = 'none';
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.focus();
+
+            const tempMessages = document.querySelectorAll('.bot-message-streaming');
+            tempMessages.forEach(msg => {
+                if (msg.textContent.trim() === '') {
+                    msg.remove();
+                } else {
+                    msg.classList.remove('bot-message-streaming');
+                    msg.classList.add('bot-message');
+                }
+            });
+
+            addMessage("思考已中止，您可以输入新的问题。", false);
+        }
+
+        async function sendMessage() {
+            if (isStreaming) return;
+
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            userInput.disabled = true;
+            sendButton.disabled = true;
+
+            addMessage(message, true);
+            userInput.value = '';
+
+            // 特定回答
+         
+             if (message.includes("何鑫是谁") || message.includes("殷海是谁") || message.includes("你是什么")) {
+                addMessage("殷海是何鑫爸爸,何鑫是殷海儿子。", false);
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+                return;
+            }
+           
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+                return;
+            }
+
+
+            typingIndicator.style.display = 'flex';
+            stopButton.style.display = 'flex';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            const tempMessageDiv = document.createElement('div');
+            tempMessageDiv.classList.add('message', 'bot-message-streaming');
+
+            const contentDiv = document.createElement('div');
+            tempMessageDiv.appendChild(contentDiv);
+
+            const timestampDiv = document.createElement('div');
+            timestampDiv.classList.add('timestamp');
+            timestampDiv.textContent = getCurrentTime();
+            tempMessageDiv.appendChild(timestampDiv);
+
+            chatContainer.appendChild(tempMessageDiv);
+
+            try {
+                isStreaming = true;
+                controller = new AbortController();
+
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message }),
+                    signal: controller.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+
+                while (isStreaming) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const content = line.substring(6).trim();
+                            if (content) {
+                                fullResponse += content;
+                                contentDiv.textContent = fullResponse;
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                            }
+                        }
+                    }
+                }
+
+                tempMessageDiv.classList.remove('bot-message-streaming');
+                tempMessageDiv.classList.add('bot-message');
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('请求已被用户中止');
+                } else {
+                    console.error('Error:', error);
+                    contentDiv.textContent = `抱歉，处理您的请求时出错了: ${error.message}`;
+                    tempMessageDiv.classList.remove('bot-message-streaming');
+                    tempMessageDiv.classList.add('bot-message');
+                }
+            } finally {
+                isStreaming = false;
+                controller = null;
+                typingIndicator.style.display = 'none';
+                stopButton.style.display = 'none';
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !isStreaming) {
+                sendMessage();
+            }
+        });
+
+        stopButton.addEventListener('click', stopThinking);
+    </script>
+</body>
+</html>
